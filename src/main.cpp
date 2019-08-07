@@ -46,28 +46,8 @@ int main() {
 		}
 	}
 
-	//auto start = std::chrono::high_resolution_clock::now();
-	/*for (int total = 0; total < 100000; ++total) {
-
-		double cost = 0;
-
-
-		std::cout << cost << std::endl;
-	}*/
-
-	//auto end = std::chrono::high_resolution_clock::now();
-	//double timer = (end - start).count() * 0.000000001;
-	//std::cout << timer << std::endl;
-
 	std::cout << "done" << std::endl;
-
-
-	//std::cout << nn.getOutputLayer()->layerMat << std::endl;
 
 	std::cin.ignore();
 
 }
-
-//5.7 6.7 5.7 5.7
-
-//5.48 5.7 5.15 5.67
