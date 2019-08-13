@@ -1,16 +1,12 @@
 #include "NeuralNetwork.h"
 #include <iostream>
+#include <fstream>
+#include <sstream>
 
 double sigmoid(double input) {
 	double ePowX = std::exp(input);
 	double result = ePowX / (ePowX + 1.0);
-	/*if (ePowX != ePowX) {
-		std::cout << input << std::endl;
-	}*/
-	//std::cout << result << std::endl;
 	return result;
-
-	//return input / (1.0 + std::abs(input));
 }
 
 double sigmoidDerivative(double input) {
@@ -88,35 +84,6 @@ void NeuralNetwork::propogateBackwards(int answer) {
 	}
 }
 
-double NeuralNetwork::calculateCost(int answer) {
-	double cost = 0.0;
-	for (int i = 0; i < getOutputLayer()->getLayerSize(); ++i) {
-		double desired = (i == answer) ? 1.0 : 0.0;
-		double newCost = getOutputLayer()->layerMat(i, 0) - desired;
-
-		cost += newCost * newCost;
-	}
-	return cost;
-}
-
-bool NeuralNetwork::isCorrect(int answer) {
-	MatrixXd& outMat = getOutputLayer()->layerMat;
-
-	double highest = 0.0;
-	int highestIndex = 0;
-	for (int i = 0; i < 10; ++i) {
-		if (outMat(i, 0) > highest) {
-			highest = outMat(i, 0);
-			highestIndex = i;
-		}
-	}
-
-	if (highestIndex == answer)
-		return true;
-
-	return false;
-}
-
 void NeuralNetwork::calculateDeltaWeights(int layerIndex) {
 	int previousLayerIndex = layerIndex - 1;
 	int layerSize = layers[layerIndex]->getLayerSize(), previousLayerSize = layers[previousLayerIndex]->getLayerSize();
@@ -167,5 +134,82 @@ void NeuralNetwork::calculateDeltaBiases(int layerIndex) {
 		double delAdelD = sigmoidDerivative(layers[layerIndex]->layerMatNoSigmoid(j, 0));
 
 		layers[layerIndex]->deltaBiases(j, 0) += delCdelA * delAdelD;
+	}
+}
+
+void NeuralNetwork::updateLayers(int batchSize, double stepSize) {
+	for(int i = 0; i < layers.size(); ++i) {
+		layers[i]->deltaBiases /= (double)batchSize;
+		layers[i]->deltaWeights /= (double)batchSize;
+		
+		layers[i]->layerBiases -= layers[i]->deltaBiases * stepSize;
+		layers[i]->layerWeights -= layers[i]->deltaWeights * stepSize;
+		
+		layers[i]->deltaBiases.setZero();
+		layers[i]->deltaWeights.setZero();
+	}
+}
+
+double NeuralNetwork::calculateCost(int answer) {
+	double cost = 0.0;
+	for (int i = 0; i < getOutputLayer()->getLayerSize(); ++i) {
+		double desired = (i == answer) ? 1.0 : 0.0;
+		double newCost = getOutputLayer()->layerMat(i, 0) - desired;
+
+		cost += newCost * newCost;
+	}
+	return cost;
+}
+
+bool NeuralNetwork::isCorrect(int answer) {
+	MatrixXd& outMat = getOutputLayer()->layerMat;
+
+	double highest = 0.0;
+	int highestIndex = 0;
+	for (int i = 0; i < 10; ++i) {
+		if (outMat(i, 0) > highest) {
+			highest = outMat(i, 0);
+			highestIndex = i;
+		}
+	}
+
+	if (highestIndex == answer)
+		return true;
+
+	return false;
+}
+
+void NeuralNetwork::writeWeightsAndBiasesToFile(std::string filename) {
+	std::fstream outStream(filename, std::ios::out | std::ios::binary);
+
+	for(int i = 0; i < layers.size(); ++i) {
+		outStream.write((const char*)layers[i]->layerBiases.data(), sizeof(double) * layers[i]->layerBiases.size());
+		outStream.write((const char*)layers[i]->layerWeights.data(), sizeof(double) * layers[i]->layerWeights.size());
+	}
+
+	outStream.close();
+}
+
+void NeuralNetwork::loadWeightsAndBiasesFromFile(std::string filepath) {
+	std::fstream fileStream(filepath, std::ios::in | std::ios::binary);
+	if(!fileStream.is_open()) {
+		fileStream.close();
+		std::cout << "Could not open file " << filepath << std::endl;
+		return;
+	}
+	std::stringstream filebuffer;
+	filebuffer << fileStream.rdbuf();
+	fileStream.close();
+	std::string file = filebuffer.str();
+
+	int dataOffset = 0;
+	for(int i = 0; i < layers.size(); ++i) {
+		int biasSize = sizeof(double) * layers[i]->layerBiases.size();
+		std::memcpy(layers[i]->layerBiases.data(), &file[dataOffset], biasSize);
+		dataOffset += biasSize;
+
+		int weightSize = sizeof(double) * layers[i]->layerWeights.size();
+		std::memcpy(layers[i]->layerWeights.data(), &file[dataOffset], weightSize);
+		dataOffset += weightSize;		
 	}
 }

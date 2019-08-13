@@ -30,14 +30,18 @@ public:
 
 	void setInputLayer(char* image, int imageSize);
 	void propogateForward();
+
 	void propogateBackwards(int answer);
-
-	double calculateCost(int answer);
-	bool isCorrect(int answer);
-
 	void calculateDeltaWeights(int layerIndex);
 	void calculateDeltaLayer(int layerIndex, int answer);
 	void calculateDeltaBiases(int layerIndex);
+
+	void updateLayers(int batchSize, double stepSize);
+	double calculateCost(int answer);
+	bool isCorrect(int answer);
+
+	void writeWeightsAndBiasesToFile(std::string filename);
+	void loadWeightsAndBiasesFromFile(std::string filepath);
 
 	inline Layer* getInputLayer() { return layers[0]; }
 	inline Layer* getOutputLayer() { return layers[layers.size() - 1]; }
