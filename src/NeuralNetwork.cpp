@@ -179,6 +179,16 @@ bool NeuralNetwork::isCorrect(int answer) {
 	return false;
 }
 
+int NeuralNetwork::getAnswer() {
+	int answer = 0;
+	for(int i = 1; i < getOutputLayer()->getLayerSize(); ++i) {
+		if(getOutputLayer()->layerMat(i, 0) > getOutputLayer()->layerMat(answer)) {
+			answer = i;
+		}
+	}
+	return answer;
+}
+
 void NeuralNetwork::writeWeightsAndBiasesToFile(std::string filename) {
 	std::fstream outStream(filename, std::ios::out | std::ios::binary);
 

@@ -1,11 +1,12 @@
 #include <iostream>
-//#include "Debug.h"
+#include "Debug.h"
 #include "DataLoader.h"
 #include "NeuralNetwork.h"
 #include <chrono>
 
 void trainNeuralNetwork(NeuralNetwork& nn, int time) {
 	DataLoader dataLoader("data/train-images.idx3-ubyte", "data/train-labels.idx1-ubyte");
+	int imageSize = nn.getInputLayer()->getLayerSize();
 
 	auto start = std::chrono::steady_clock::now();
 
@@ -16,9 +17,9 @@ void trainNeuralNetwork(NeuralNetwork& nn, int time) {
 
 		for (int i = 0; i < batchSize; ++i) {
 			int imageNumber = (i + batches * batchSize) % 60000;
-			int answer = dataLoader.getLable(imageNumber);
+			int answer = dataLoader.getTrainingLable(imageNumber);
 
-			nn.setInputLayer(dataLoader.getImage(imageNumber), nn.getInputLayer()->getLayerSize());
+			nn.setInputLayer(dataLoader.getTrainingImage(imageNumber, imageSize), nn.getInputLayer()->getLayerSize());
 			nn.propogateForward();
 
 			nn.propogateBackwards(answer);
@@ -47,23 +48,21 @@ int main(int argc, char* argv[]) {
 		std::cout << "To few arguments, use -h for help" << std::endl;
 		return -1;
 	}
-	bool train = false;
-	int time = 0;
-	std::string biasAndWeightFile = "";
+
+	int trainTime = 0;
+	std::string biasAndWeightFile = "", loadImageFile = "";
 	for(int i = 1; i < argc; ++i) {
 		std::string argument = argv[i];
 		if(argument == "-h" || argument == "--help") {
-			std::cout << "Usage: " << argv[0] << " [OPTION]\n\n\t-t, --train\ttrain neural network\n\t-f, --file\tload weights and biases from file" << std::endl;
+			std::cout << "Usage: " << argv[0] << " [OPTION]\n\n\t-i, --image\tload image and output the number\n\t-f, --file\tload weights and biases from file\n\t-t, --train\ttrain neural network" << std::endl;
 			return 0;
 		}
-		else if(argument == "-t" || argument == "--train") {
+		else if(argument == "-i" || argument == "--image") {
 			if(i + 1 >= argc) {
-				std::cout << "To few arguments, specify the duration in seconds you wish to train the neural network" << std::endl;
+				std::cout << "No file specified" << std::endl;
 				return -1;
 			}
-			time = std::atoi(argv[++i]);
-			
-			train = true;
+			loadImageFile = argv[++i];
 		}
 		else if(argument == "-f" || argument == "--file") {
 			if(i + 1 >= argc) {
@@ -72,19 +71,43 @@ int main(int argc, char* argv[]) {
 			}
 			biasAndWeightFile = argv[++i];
 		}
+		else if(argument == "-t" || argument == "--train") {
+			if(i + 1 >= argc) {
+				std::cout << "To few arguments, specify the duration in seconds you wish to train the neural network" << std::endl;
+				return -1;
+			}
+			std::string number = argv[++i];
+			trainTime = std::stoi(number);
+		}
+		else {
+			std::cout << "Invalid option: " << argument << std::endl;
+			return -1;
+		}
 	}
 
-	int imageSize = 28 * 28, hiddenLayerSize = 16;
+	int imageWidth = 28, imageHeight = 28, imageSize = imageWidth * imageHeight, hiddenLayerSize = 16;
 	NeuralNetwork nn(2, imageSize, hiddenLayerSize, 10);
 
-	if(biasAndWeightFile != "") {
+	if(biasAndWeightFile != "" && (trainTime || loadImageFile != "")) {
 		std::cout << "Loading weights and biases from " << biasAndWeightFile << std::endl;
 		nn.loadWeightsAndBiasesFromFile(biasAndWeightFile);
 	}
 
-	if(train) {
-		trainNeuralNetwork(nn, time);
+	if(trainTime > 0) {
 
+		trainNeuralNetwork(nn, trainTime);
+
+		std::cout << "Saving biases and weights to file 'output'" << std::endl;
 		nn.writeWeightsAndBiasesToFile("output");
+	}
+
+	if(loadImageFile != "") {
+		DataLoader dataLoader(loadImageFile, imageWidth, imageHeight);
+
+		nn.setInputLayer(dataLoader.getImage(), imageSize);
+
+		nn.propogateForward();
+
+		std::cout << "The number is: " << nn.getAnswer() << std::endl;
 	}
 }

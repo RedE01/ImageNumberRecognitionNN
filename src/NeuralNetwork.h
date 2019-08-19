@@ -39,6 +39,7 @@ public:
 	void updateLayers(int batchSize, double stepSize);
 	double calculateCost(int answer);
 	bool isCorrect(int answer);
+	int getAnswer();
 
 	void writeWeightsAndBiasesToFile(std::string filename);
 	void loadWeightsAndBiasesFromFile(std::string filepath);
