@@ -3,3 +3,6 @@ bin/
 Makefile
 obj/
 .vscode/
+*.sln
+*.vcxproj*
+.vs/

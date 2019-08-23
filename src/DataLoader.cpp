@@ -69,11 +69,12 @@ std::string DataLoader::loadImageFile(std::string imagePath, int desiredWidth, i
 	}
 
 	int imageSize = desiredWidth * desiredHeight;
-	char output[imageSize];
+	std::string output;
+	output.resize(imageSize);
 	for(int i = 0, j = 0; i < imageSize; ++i, j += comp) {
 		output[i] = img[j];
 	}
 	stbi_image_free(img);
 
-	return std::string(output, imageSize);
+	return output;
 }
